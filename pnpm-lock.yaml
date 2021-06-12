@@ -1,0 +1,37 @@
+lockfileVersion: 5.3
+
+specifiers:
+  '@appguru/luafmt': ^1.5.0
+  luaparse: ^0.3.1
+
+dependencies:
+  '@appguru/luafmt': 1.5.0
+  luaparse: 0.3.1
+
+packages:
+
+  /@appguru/luafmt/1.5.0:
+    resolution: {integrity: sha512-XD+emgq9fXXO8cwOzWpzXB5Gruf/B1TepKpFNYVcg8WNTcw1BD7+/AmZbgEZAvBuEY+itpHBrvy42BKQysbBaQ==}
+    engines: {node: '>= 6.0.0', npm: '>= 3.0.0'}
+    dependencies:
+      luaparse: 0.3.1
+      luon: 1.2.8
+      lustils: 1.0.2
+    dev: false
+
+  /luaparse/0.3.1:
+    resolution: {integrity: sha512-b21h2bFEbtGXmVqguHogbyrMAA0wOHyp9u/rx+w6Yc9pW1t9YjhGUsp87lYcp7pFRqSWN/PhFkrdIqKEUzRjjQ==}
+    hasBin: true
+    dev: false
+
+  /luon/1.2.8:
+    resolution: {integrity: sha512-ytswEp7Aca5rqO9jpInADSomlbBWjsx4HCgKcZ/NMyRGSF7uYDaoUHZ7nTHLgRMCNoxKTY6QpoGxW13NysdFoA==}
+    engines: {node: '>= 6.0.0', npm: '>= 3.0.0'}
+    dependencies:
+      lustils: 1.0.2
+    dev: false
+
+  /lustils/1.0.2:
+    resolution: {integrity: sha512-YnCXFRj6prZX2f7rVCfA3U/yw6z7D0YYoy0Os60jlGUhaAYTRHheH0T7X3squDGArJ9+WLtt/1b/wy5eAREBZg==}
+    engines: {node: '>= 6.0.0', npm: '>= 3.0.0'}
+    dev: false

@@ -1,0 +1,21 @@
+{
+  "name": "purescript-tsuki",
+  "version": "1.1.0",
+  "description": "an edsl of lua",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "lua"
+  ],
+  "author": "suzu",
+  "license": "MIT",
+  "dependencies": {
+    "@appguru/luafmt": "^1.5.0",
+    "luaparse": "^0.3.1"
+  }
+}

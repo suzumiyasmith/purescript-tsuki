@@ -19,7 +19,7 @@ indext = Index
 
 -- | get key from table
 gett :: Exp -> Exp -> Exp
-gett k t = Index k t
+gett k t = Index t k
 
 get :: Name -> Exp -> Exp
 get k t = gett (lit k) t

@@ -72,7 +72,8 @@ foreign import parseString :: String -> AST
 foreign import renderAST :: AST -> String
 
 
-type RenderM = StateT Int Effect
+type Fresh = {freshVar :: Int, freshDepth :: Int}
+type RenderM = StateT Fresh Effect
 
 renderToFile :: Block Exp -> String -> Effect Unit
 renderToFile b path = render b >>= writeTextFile UTF8 path
@@ -81,17 +82,24 @@ render :: Block Exp -> Effect String
 render b = renderAST <$> renderM b
 
 renderM :: Block Exp -> Effect AST
-renderM b = evalStateT (renderBlock b) 0
+renderM b = evalStateT (renderBlock b) {freshVar: 0, freshDepth: 0}
 
 renderBlock :: Block Exp -> RenderM AST
 renderBlock b = do
-  let Tuple a sts = runWriter $ evalStateT b 0
-  rs <- traverse renderStat sts
-  r <- renderExp a
-  pure $ chunk $ rs <> [returnStatement [r]]
+  renderBlock' b $ \sts a -> do
+    rs <- traverse renderStat sts
+    r <- renderExp a
+    pure $ chunk $ rs <> [returnStatement [r]]
 
 -- renderBlock :: Block Exp -> AST
 -- render b = let Tuple a sts = runWriter b in chunk $ (renderStat <$> sts) <> [returnStatement [renderExp a]]
+
+renderBlock' :: forall a1. Block Exp -> (Array Stat -> Exp -> RenderM a1) -> RenderM a1
+renderBlock' b f = do
+  i <- getDepth
+  let Tuple (Tuple a j) sts = runWriter $ runStateT b i
+  withDepth j do
+    f sts a
 
 renderStat :: Stat -> RenderM AST
 renderStat (Assign e1 e2) = do
@@ -125,52 +133,52 @@ renderExp (Index t k) = do
   pure $ indexExpression rt rk
 
 renderExp (Fun0 b) = do
-  let Tuple a sts = runWriter $ evalStateT b 0
-  rs <- traverse renderStat sts
-  r <- renderExp a
-  pure $ functionStatement [] $ rs <> [returnStatement [r]]
+  renderBlock' b $ \sts a -> do
+    rs <- traverse renderStat sts
+    r <- renderExp a
+    pure $ functionStatement [] $ rs <> [returnStatement [r]]
 
 renderExp (Fun1 b) = do
   v1 <- getVar
-  let Tuple a sts = runWriter $ evalStateT (b v1) 0
-  rs <- traverse renderStat sts
-  vs <- traverse renderExp [v1]
-  r <- renderExp a
-  endFun 1
-  pure $ functionStatement vs $ rs <> [returnStatement [r]]
+  renderBlock' (b v1) $ \sts a -> do
+    rs <- traverse renderStat sts
+    vs <- traverse renderExp [v1]
+    r <- renderExp a
+    endFun 1
+    pure $ functionStatement vs $ rs <> [returnStatement [r]]
 
 renderExp (Fun2 b) = do
   v1 <- getVar
   v2 <- getVar
-  let Tuple a sts = runWriter $ evalStateT (b v1 v2) 0
-  rs <- traverse renderStat sts
-  vs <- traverse renderExp [v1, v2]
-  r <- renderExp a
-  endFun 2
-  pure $ functionStatement vs $ rs <> [returnStatement [r]]
+  renderBlock' (b v1 v2) $ \sts a -> do
+    rs <- traverse renderStat sts
+    vs <- traverse renderExp [v1, v2]
+    r <- renderExp a
+    endFun 2
+    pure $ functionStatement vs $ rs <> [returnStatement [r]]
 
 renderExp (Fun3 b) = do
   v1 <- getVar
   v2 <- getVar
   v3 <- getVar
-  let Tuple a sts = runWriter $ evalStateT (b v1 v2 v3) 0
-  rs <- traverse renderStat sts
-  vs <- traverse renderExp [v1, v2, v3]
-  r <- renderExp a
-  endFun 3
-  pure $ functionStatement vs $ rs <> [returnStatement [r]]
+  renderBlock' (b v1 v2 v3) $ \sts a -> do
+    rs <- traverse renderStat sts
+    vs <- traverse renderExp [v1, v2, v3]
+    r <- renderExp a
+    endFun 3
+    pure $ functionStatement vs $ rs <> [returnStatement [r]]
 
 renderExp (Fun4 b) = do
   v1 <- getVar
   v2 <- getVar
   v3 <- getVar
   v4 <- getVar
-  let Tuple a sts = runWriter $ evalStateT (b v1 v2 v3 v4) 0
-  rs <- traverse renderStat sts
-  vs <- traverse renderExp [v1, v2, v3, v4]
-  r <- renderExp a
-  endFun 4
-  pure $ functionStatement vs $ rs <> [returnStatement [r]]
+  renderBlock' (b v1 v2 v3 v4) $ \sts a -> do
+    rs <- traverse renderStat sts
+    vs <- traverse renderExp [v1, v2, v3, v4]
+    r <- renderExp a
+    endFun 4
+    pure $ functionStatement vs $ rs <> [returnStatement [r]]
 
 renderExp (FunCall f xs) = do
   r1 <- renderExp f
@@ -190,12 +198,26 @@ renderExp (Unop n e) =
 
 getVar :: RenderM Exp
 getVar = do
-  v <- gets (\fresh -> Ident $ "var_" <> show fresh)
-  modify_ (\k -> k + 1)
+  v <- gets (\fresh -> Ident $ "var_" <> show fresh.freshVar)
+  modify_ (\k -> {freshVar: k.freshVar + 1, freshDepth: k.freshDepth})
   pure v
 
 endFun :: Int -> RenderM Unit
-endFun i = modify_ (\k -> k - i)
+endFun i =
+  modify_ (\k -> {freshVar: k.freshVar - i, freshDepth: k.freshDepth})
+
+getDepth :: RenderM Int
+getDepth = do
+  i <- gets (\fresh -> fresh.freshDepth)
+  pure i
+
+
+withDepth :: forall a. Int -> RenderM a -> RenderM a
+withDepth j b = do
+  modify_ (\k -> {freshVar: k.freshVar, freshDepth: k.freshDepth + j})
+  r <- b
+  modify_ (\k -> {freshVar: k.freshVar, freshDepth: k.freshDepth - j})
+  pure r
 
 -- toPara :: Int -> RenderM (Array Exp)
 -- toPara 0 = pure []

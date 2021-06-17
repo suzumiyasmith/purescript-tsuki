@@ -14,12 +14,18 @@ nil = Nil
 ident :: Name -> Exp
 ident = Ident
 
+indext :: Exp -> Exp -> Exp
+indext = Index
+
 -- | get key from table
 gett :: Exp -> Exp -> Exp
-gett t k = Index t k
+gett k t = Index k t
 
-get :: Exp -> Name -> Exp
-get t k = gett t (lit k)
+get :: Name -> Exp -> Exp
+get k t = gett (lit k) t
+
+geti :: Int -> Exp -> Exp
+geti i t = gett (lit i) t
 
 -- | set left exp to right exp 
 set_ :: Name -> Exp -> Block Unit
@@ -35,11 +41,17 @@ newVar r = do
   S.modify_ (\k -> k + 1)
   pure l
 
+newVar_ :: Exp -> Block Unit
+newVar_ r = do
+  l <- S.gets (\fresh -> ident $ "unusedvar_" <> show fresh)
+  tell [LocalAssign l r]
+  S.modify_ (\k -> k + 1)
+
 set :: Exp -> Name -> Exp -> Block Unit
 set t k v = sett t (lit k) v
 
 sett :: Exp -> Exp -> Exp -> Block Unit
-sett t k v = tell [Assign (gett t k) v]
+sett t k v = tell [Assign (gett k t) v]
 
 table :: forall r . Homogeneous r Exp => Record r -> Exp
 table = fromHomogeneous >>> toUnfoldable >>> TableConst

@@ -70,7 +70,7 @@ instance commuExp :: CommutativeRing Exp
 
 instance euclideanRingExp :: EuclideanRing Exp where
   degree = const 1 -- no idea how it works
-  div = Binop "//"
+  div = Binop "/"
   mod = Binop "%"
 
 instance heytingAlgebraExp :: HeytingAlgebra Exp where
